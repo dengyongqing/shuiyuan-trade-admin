@@ -34,31 +34,15 @@ const queryString = require('query-string');
 @Form.create()
 class BasicForms extends PureComponent {
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      sendTime: '',
-      operateLabel: '添加',
-      totalCost: 0,
-    };
-  }
-
-  static getDerivedStateFromProps = (nextProps, prevState) => {
-    const { orderDetail } = nextProps;
-    if (orderDetail && orderDetail.sendTime !== prevState.sendTime) {
-      console.log('sendTime', orderDetail.sendTime);
-      return {
-        sendTime: orderDetail.sendTime,
-      }
-    }
-    return null;
-  }
+  state = {
+   sendTime: '',
+   operateLabel: '添加',
+  };
 
   componentDidMount = () => {
     const { dispatch, form, orderDetail } = this.props;
     const { operateLabel } = this.state;
     const query = queryString.parse(location.search);
-
     if (query && query.id) {
       this.setState({
         operateLabel: '更新',
@@ -79,16 +63,15 @@ class BasicForms extends PureComponent {
 
   handleSubmit = e => {
     const { dispatch, form, orderDetail } = this.props;
-    const { operateLabel } = this.state;
+    const { sendTime, operateLabel } = this.state;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        const sendTime = values.sendTime.format('YYYY-MM-DD HH:mm:ss');
-        // values.sendTime = this.state.sendTime;
+        values.sendTime = sendTime;
         if (orderDetail && orderDetail.id) {
           dispatch({
             type: 'order/update',
-            payload: { ...values, sendTime },
+            payload: { ...values },
             callback: () => {
               message.success(`${operateLabel}成功`);
               dispatch({
@@ -120,45 +103,18 @@ class BasicForms extends PureComponent {
 
   onChangeDate = (d) => {
     const sendTime = d.format('YYYY-MM-DD HH:mm:ss');
-    const {
-      form: { getFieldValue, setFieldsValue },
-    } = this.props;
-    // setFieldsValue({
-    //   sendTime,
-    // })
     this.setState({
-      sendTime: sendTime,
+      sendTime,
     });
   }
 
-  onChangeTotalCost = (key) => {
-    return (value) => {
-      const {
-        form: { getFieldValue, setFieldsValue },
-      } = this.props;
-      let freight = getFieldValue('freight');
-      let insuranceCost = getFieldValue('insuranceCost');
-      let packageCost = getFieldValue('packageCost');
-      if (key === 'freight') {
-        freight = value;
-      } else if (key === 'insuranceCost') {
-        insuranceCost = value;
-      } else if (key === 'packageCost') {
-        packageCost = value;
-      }
-      const totalCost = freight + insuranceCost + packageCost;
-      setFieldsValue({
-        totalCost,
-      });
-    }
-  }
-
   render() {
-    const { submitting, orderDetail, form } = this.props;
-    const { operateLabel, totalCost, sendTime } = this.state;
+    const { submitting, orderDetail } = this.props;
+    const { sendTime, operateLabel } = this.state;
     const {
       form: { getFieldDecorator, getFieldValue },
     } = this.props;
+
     const formItemLayout = {
       // labelCol: {
       //   xs: { span: 24 },
@@ -252,9 +208,7 @@ class BasicForms extends PureComponent {
                     })(<DatePicker
                       onChange={this.onChangeDate}
                       placeholder='请选择寄件时间'
-                      showTime
-                      format="YYYY-MM-DD HH:mm:ss" 
-                      // showTime={{ format: 'YYYY-MM-DD HH:mm:ss' }}
+                      showTime={{ format: 'YYYY-MM-DD HH:mm:ss' }}
                       value={moment(sendTime, 'YYYY-MM-DD HH:mm:ss')}
                     />)}
                   </FormItem>
@@ -675,14 +629,14 @@ class BasicForms extends PureComponent {
                 <Col md={8} sm={24}>
                   <FormItem {...formItemLayout} label={keyValueMap.freight}>
                     {getFieldDecorator('freight', {
-                      initialValue: orderDetail.freight ? orderDetail.freight : 0,
+                      initialValue: orderDetail.freight,
                       rules: [
                         {
                           required: true,
                           message: '请输入运费',
                         },
                       ],
-                    })(<InputNumber onChange={this.onChangeTotalCost('freight')} placeholder='请输入运费' addonAfter="元" />)}
+                    })(<Input placeholder='请输入运费' addonAfter="元" />)}
                   </FormItem>
                 </Col>
               </Row>
@@ -691,14 +645,14 @@ class BasicForms extends PureComponent {
                 <Col md={8} sm={24}>
                   <FormItem {...formItemLayout} label={keyValueMap.insuranceCost}>
                     {getFieldDecorator('insuranceCost', {
-                      initialValue: orderDetail.insuranceCost ? orderDetail.insuranceCost : 0,
+                      initialValue: orderDetail.insuranceCost,
                       rules: [
                         {
                           required: true,
                           message: '请输入保险费',
                         },
                       ],
-                    })(<InputNumber onChange={this.onChangeTotalCost('insuranceCost')} placeholder='请输入保险费' addonAfter="元" />)}
+                    })(<Input placeholder='请输入保险费' addonAfter="元" />)}
                   </FormItem>
                 </Col>
                 <Col md={8} sm={24}>
@@ -711,20 +665,20 @@ class BasicForms extends PureComponent {
                           message: '请输入保价金额',
                         },
                       ],
-                    })(<InputNumber placeholder='请输入保价金额' addonAfter="元" />)}
+                    })(<Input placeholder='请输入保价金额' addonAfter="元" />)}
                   </FormItem>
                 </Col>
                 <Col md={8} sm={24}>
                   <FormItem {...formItemLayout} label={keyValueMap.packageCost}>
                     {getFieldDecorator('packageCost', {
-                      initialValue: orderDetail.packageCost ? orderDetail.packageCost : 0,
+                      initialValue: orderDetail.packageCost,
                       rules: [
                         {
                           required: true,
                           message: '请输入包裹费用',
                         },
                       ],
-                    })(<InputNumber onChange={this.onChangeTotalCost('packageCost')} placeholder='请输入包裹费用' addonAfter="元" />)}
+                    })(<Input placeholder='请输入包裹费用' addonAfter="元" />)}
                   </FormItem>
                 </Col>
               </Row>
@@ -733,18 +687,14 @@ class BasicForms extends PureComponent {
                 <Col md={8} sm={24}>
                   <FormItem {...formItemLayout} label={keyValueMap.totalCost}>
                     {getFieldDecorator('totalCost', {
-                      initialValue: orderDetail.totalCost ? orderDetail.totalCost : 0,
+                      initialValue: orderDetail.totalCost,
                       rules: [
                         {
                           required: true,
                           message: '请输入运费小计',
                         },
                       ],
-                    })(<InputNumber
-                      disabled
-                      placeholder='请输入运费小计'
-                      addonAfter="元"
-                    />)}
+                    })(<Input placeholder='请输入运费小计' addonAfter="元" />)}
                   </FormItem>
                 </Col>
                 <Col md={8} sm={24}>

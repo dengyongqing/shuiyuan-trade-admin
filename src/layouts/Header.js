@@ -66,7 +66,7 @@ class HeaderView extends PureComponent {
       return;
     }
     if (key === 'userinfo') {
-      router.push('/account/settings/base');
+      router.push('/form/order-list');
       return;
     }
     if (key === 'logout') {
@@ -154,10 +154,11 @@ class HeaderView extends PureComponent {
   }
 }
 
-export default connect(({ user, global, setting, loading }) => ({
+export default connect(({ login, user, global, setting, loading }) => ({
   currentUser: user.currentUser,
   collapsed: global.collapsed,
   fetchingNotices: loading.effects['global/fetchNotices'],
   notices: global.notices,
   setting,
+  userName: login.userName,
 }))(HeaderView);

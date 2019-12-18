@@ -72,6 +72,19 @@ export default {
   //     pathRewrite: { '^/server': '' },
   //   },
   // },
+  proxy: {
+    "/wlapi": {
+      "target": "http://47.96.158.47:8080/api",
+      "changeOrigin": true,
+      "pathRewrite": { "^/wlapi" : "" }
+    },
+    "/lgapi": {
+        "target": "http://47.96.158.47:8080",
+        "changeOrigin": true,
+        "pathRewrite": { "^/lgapi" : "" }
+      }
+  },
+  // history: 'hash',
   ignoreMomentLocale: true,
   lessLoaderOptions: {
     javascriptEnabled: true,

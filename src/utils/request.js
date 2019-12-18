@@ -118,16 +118,24 @@ export default function request(url, option) {
       sessionStorage.removeItem(`${hashcode}:timestamp`);
     }
   }
-  return fetch(url, newOptions)
+  return  fetch(url, newOptions)
     .then(checkStatus)
     .then(response => cachedSave(response, hashcode))
     .then(response => {
       // DELETE and 204 do not return data by default
       // using .json will report an error.
-      if (newOptions.method === 'DELETE' || response.status === 204) {
-        return response.text();
+      // if (newOptions.method === 'DELETE' || response.status === 204) {
+      //   return response.text();
+      // }
+
+      const resJson = response.json();
+      return resJson;
+    })
+    .then(response => {
+      if (response && response.code == 401) {
+        router.push('/user/login');
       }
-      return response.json();
+      return response;
     })
     .catch(e => {
       const status = e.name;
@@ -152,4 +160,29 @@ export default function request(url, option) {
         router.push('/exception/404');
       }
     });
+}
+
+export async function requestFile(url, options, filename) {
+  let res;
+  const op = { ...options };
+  // const agentId = getBotId();
+  // op.headers['agent-id'] = agentId;
+  op.headers = {
+    Accept: '*/*',
+    'Content-Type': 'application/json',
+  }
+  try {
+    res = await fetch(url, op);
+  } catch (e) {
+    console.log('requestFile exception:', e);
+    throw new Error('Server Error');
+  }
+
+  const blob = await res.blob();
+  const durl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = durl;
+  a.download = `${filename}.xls`;
+  a.click();
+  window.URL.revokeObjectURL(durl);
 }

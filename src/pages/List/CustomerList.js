@@ -20,11 +20,12 @@ import {
   Divider,
   Steps,
   Radio,
+  Table,
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
-import styles from './TableList.less';
+import styles from './UserList.less';
 
 const FormItem = Form.Item;
 const { Step } = Steps;
@@ -38,27 +39,75 @@ const getValue = obj =>
 const statusMap = ['default', 'processing', 'success', 'error'];
 const status = ['关闭', '运行中', '已上线', '异常'];
 
+const formItemLayout = {
+  labelCol: { span: 5 },
+  wrapperCol: { span: 15 },
+};
+
 const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
+  const { modalVisible, form, handleAdd, handleEdit, handleModalVisible, currentUser } = props;
   const okHandle = () => {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       form.resetFields();
-      handleAdd(fieldsValue);
+      if (fieldsValue.id) {
+        handleEdit(fieldsValue);
+      } else {
+        handleAdd(fieldsValue);
+      }
     });
   };
   return (
     <Modal
       destroyOnClose
-      title="新建规则"
+      title={currentUser.id ? '编辑用户' : '添加用户'}
       visible={modalVisible}
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
     >
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
-        })(<Input placeholder="请输入" />)}
+
+      <FormItem {...formItemLayout} style={{ display: 'none' }} label="用户名">
+        {form.getFieldDecorator('id', {
+          initialValue: currentUser.id,
+        })(<Input hidden />)}
+      </FormItem>
+
+      <FormItem {...formItemLayout} label="用户名">
+        {form.getFieldDecorator('userName', {
+          rules: [{ required: true, message: '请输入用户名！' }],
+          initialValue: currentUser.userName,
+        })(<Input placeholder="请输入用户名" />)}
+      </FormItem>
+      <FormItem {...formItemLayout} label="密码">
+        {form.getFieldDecorator('password', {
+          rules: [{ required: true, message: '请输入密码！' }],
+          initialValue: currentUser.password,
+        })(<Input placeholder="请输入密码" type='password' />)}
+      </FormItem>
+      <FormItem {...formItemLayout} label="角色" hasFeedBack>
+        {
+          form.getFieldDecorator('role', {
+            rules: [{ required: true, message: '请选择角色！' }],
+            initialValue: currentUser.role ? currentUser.role : 'user',
+          })(
+            <Select 
+              placeholder="请选择角色"
+              allowClear
+              style={{ width: '300px' }}
+              defaultValue='user'
+              // onChange={handleSelectChange}
+            >
+              <Option value='admin'>管理员</Option>
+              <Option value='user'>普通用户</Option>
+            </Select>,
+          )
+        }
+      </FormItem>
+      <FormItem {...formItemLayout} label="备注">
+        {form.getFieldDecorator('remark', {
+          rules: [{ message: '请输入备注！' }],
+          initialValue: currentUser.remark,
+        })(<Input placeholder="请输入备注" />)}
       </FormItem>
     </Modal>
   );
@@ -266,12 +315,12 @@ class UpdateForm extends PureComponent {
 }
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ rule, loading }) => ({
-  rule,
+@connect(({ customer, loading }) => ({
+  customer,
   loading: loading.models.rule,
 }))
 @Form.create()
-class TableList extends PureComponent {
+class CustomerList extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -279,75 +328,92 @@ class TableList extends PureComponent {
     selectedRows: [],
     formValues: {},
     stepFormValues: {},
+    currentUser: {},
+    keyWord: '',
   };
+
+// "address": "string",
+// "area": "string",
+// "company": "string",
+// "fixedPhone": "string",
+// "name": "string",
+// "phone": "string"
 
   columns = [
     {
-      title: '规则名称',
+      title: '姓名',
       dataIndex: 'name',
     },
     {
-      title: '描述',
-      dataIndex: 'desc',
+      title: '手机',
+      dataIndex: 'phone',
     },
     {
-      title: '服务调用次数',
-      dataIndex: 'callNo',
-      sorter: true,
-      align: 'right',
-      render: val => `${val} 万`,
-      // mark to display a total number
-      needTotal: true,
+      title: '固定电话',
+      dataIndex: 'fixedPhone',
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      filters: [
-        {
-          text: status[0],
-          value: 0,
-        },
-        {
-          text: status[1],
-          value: 1,
-        },
-        {
-          text: status[2],
-          value: 2,
-        },
-        {
-          text: status[3],
-          value: 3,
-        },
-      ],
-      render(val) {
-        return <Badge status={statusMap[val]} text={status[val]} />;
-      },
+      title: '公司',
+      dataIndex: 'company',
     },
     {
-      title: '上次调度时间',
-      dataIndex: 'updatedAt',
-      sorter: true,
-      render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm:ss')}</span>,
+      title: '区域',
+      dataIndex: 'area',
     },
     {
-      title: '操作',
-      render: (text, record) => (
-        <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>配置</a>
-          <Divider type="vertical" />
-          <a href="">订阅警报</a>
-        </Fragment>
-      ),
+      title: '地址',
+      dataIndex: 'address',
     },
+    // {
+    //   title: '操作',
+    //   render: (text, record) => (
+    //     <Fragment>
+    //       <a onClick={() => this.deleteUser(record)}>删除</a>
+    //       <Divider type="vertical" />
+    //       <a onClick={() => this.editUser(record)}>编辑</a>
+    //     </Fragment>
+    //   ),
+    // },
   ];
 
   componentDidMount() {
     const { dispatch } = this.props;
+    const { keyWord } = this.state;
+    
     dispatch({
-      type: 'rule/fetch',
+      type: 'customer/fetch',
+      payload: {
+        keyWord: keyWord,
+        pageInfo: {
+          pageNo: 0,
+          pageSize: 1000000000,
+        }
+      },
     });
   }
+
+  deleteUser = (record) => {
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'userManage/remove',
+      payload: {
+        id: record.id,
+      },
+      callback: () => {
+        message.success('删除成功');
+        dispatch({
+          type: 'userManage/fetch',
+        });
+      }
+    });
+  };
+
+  editUser = (record) => {
+    this.setState({
+      modalVisible: true,
+      currentUser: record,
+    })
+  };
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
     const { dispatch } = this.props;
@@ -370,7 +436,7 @@ class TableList extends PureComponent {
     }
 
     dispatch({
-      type: 'rule/fetch',
+      type: 'user/fetch',
       payload: params,
     });
   };
@@ -382,7 +448,7 @@ class TableList extends PureComponent {
       formValues: {},
     });
     dispatch({
-      type: 'rule/fetch',
+      type: 'user/fetch',
       payload: {},
     });
   };
@@ -402,7 +468,7 @@ class TableList extends PureComponent {
     switch (e.key) {
       case 'remove':
         dispatch({
-          type: 'rule/remove',
+          type: 'user/remove',
           payload: {
             key: selectedRows.map(row => row.key),
           },
@@ -426,31 +492,24 @@ class TableList extends PureComponent {
 
   handleSearch = e => {
     e.preventDefault();
-
-    const { dispatch, form } = this.props;
-
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
-      this.setState({
-        formValues: values,
-      });
-
-      dispatch({
-        type: 'rule/fetch',
-        payload: values,
-      });
+    const { dispatch } = this.props;
+    const { keyWord } = this.state;
+    dispatch({
+      type: 'customer/fetch',
+      payload: {
+        keyWord: keyWord,
+        pageInfo: {
+          pageNo: 0,
+          pageSize: 1000000000,
+        }
+      },
     });
   };
 
   handleModalVisible = flag => {
     this.setState({
       modalVisible: !!flag,
+      currentUser: {},
     });
   };
 
@@ -464,20 +523,47 @@ class TableList extends PureComponent {
   handleAdd = fields => {
     const { dispatch } = this.props;
     dispatch({
-      type: 'rule/add',
+      type: 'userManage/add',
       payload: {
-        desc: fields.desc,
+        ...fields,
+        contact: '',
+        createTime: '',
+        id: '',
       },
+      callback: () => {
+        message.success('添加成功');
+        dispatch({
+          type: 'userManage/fetch',
+        });
+      }
     });
-
-    message.success('添加成功');
     this.handleModalVisible();
   };
 
+  handleEdit = fields => {
+    const { dispatch } = this.props;
+    const { currentUser } = this.state;
+    dispatch({
+      type: 'userManage/update',
+      payload: {
+        ...currentUser,
+        ...fields,
+      },
+      callback: () => {
+        message.success('更新成功');
+        dispatch({
+          type: 'userManage/fetch',
+        });
+      }
+    });
+    this.handleModalVisible();
+  };
+
+  
   handleUpdate = fields => {
     const { dispatch } = this.props;
     dispatch({
-      type: 'rule/update',
+      type: 'user/update',
       payload: {
         name: fields.name,
         desc: fields.desc,
@@ -489,6 +575,13 @@ class TableList extends PureComponent {
     this.handleUpdateModalVisible();
   };
 
+  onChangeKeyWorld = e => {
+    const inputText = e.target.value;
+    this.setState({
+      keyWord: inputText,
+    });
+  };
+
   renderSimpleForm() {
     const {
       form: { getFieldDecorator },
@@ -497,18 +590,8 @@ class TableList extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="规则名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <FormItem label="使用状态">
-              {getFieldDecorator('status')(
-                <Select placeholder="请选择" style={{ width: '100%' }}>
-                  <Option value="0">关闭</Option>
-                  <Option value="1">运行中</Option>
-                </Select>
-              )}
+            <FormItem label="客户关键字">
+              {getFieldDecorator('name')(<Input onChange={this.onChangeKeyWorld} placeholder="请输入关键字" />)}
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
@@ -516,12 +599,12 @@ class TableList extends PureComponent {
               <Button type="primary" htmlType="submit">
                 查询
               </Button>
-              <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+              {/* <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
                 重置
               </Button>
               <a style={{ marginLeft: 8 }} onClick={this.toggleForm}>
                 展开 <Icon type="down" />
-              </a>
+              </a> */}
             </span>
           </Col>
         </Row>
@@ -604,16 +687,17 @@ class TableList extends PureComponent {
   }
 
   renderForm() {
-    const { expandForm } = this.state;
-    return expandForm ? this.renderAdvancedForm() : this.renderSimpleForm();
+    // const { expandForm } = this.state;
+    // return expandForm ? this.renderAdvancedForm() : this.renderSimpleForm();
+    return this.renderSimpleForm();
   }
 
   render() {
     const {
-      rule: { data },
+      customer: { customerList, pagination },
       loading,
     } = this.props;
-    const { selectedRows, modalVisible, updateModalVisible, stepFormValues } = this.state;
+    const { selectedRows, modalVisible, updateModalVisible, stepFormValues, currentUser } = this.state;
     const menu = (
       <Menu onClick={this.handleMenuClick} selectedKeys={[]}>
         <Menu.Item key="remove">删除</Menu.Item>
@@ -623,6 +707,7 @@ class TableList extends PureComponent {
 
     const parentMethods = {
       handleAdd: this.handleAdd,
+      handleEdit: this.handleEdit,
       handleModalVisible: this.handleModalVisible,
     };
     const updateMethods = {
@@ -630,14 +715,14 @@ class TableList extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <PageHeaderWrapper title="查询表格">
+      <PageHeaderWrapper title="客户列表">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
             <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
-                新建
-              </Button>
+              {/* <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
+                新建用户
+              </Button> */}
               {selectedRows.length > 0 && (
                 <span>
                   <Button>批量操作</Button>
@@ -649,17 +734,31 @@ class TableList extends PureComponent {
                 </span>
               )}
             </div>
-            <StandardTable
+
+            <Table
+              // rowKey={rowKey || 'key'}
+              // rowSelection={rowSelection}
+              columns={this.columns}
+              dataSource={customerList}
+              pagination={pagination}
+              // onChange={this.handleTableChange}
+              // {...rest}
+            />
+
+            {/* <StandardTable
               selectedRows={selectedRows}
               loading={loading}
-              data={data}
+              data={{
+                list: userList,
+                pagination: pagination,
+              }}
               columns={this.columns}
               onSelectRow={this.handleSelectRows}
               onChange={this.handleStandardTableChange}
-            />
+            /> */}
           </div>
         </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
+        <CreateForm {...parentMethods} currentUser={currentUser} modalVisible={modalVisible} />
         {stepFormValues && Object.keys(stepFormValues).length ? (
           <UpdateForm
             {...updateMethods}
@@ -672,4 +771,4 @@ class TableList extends PureComponent {
   }
 }
 
-export default TableList;
+export default CustomerList;
