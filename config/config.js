@@ -73,16 +73,16 @@ export default {
   //   },
   // },
   proxy: {
-    "/wlapi": {
-      "target": "http://47.96.158.47:8080/api",
-      "changeOrigin": true,
-      "pathRewrite": { "^/wlapi" : "" }
+    '/wlapi': {
+      target: 'http://39.100.108.136:8080/api',
+      changeOrigin: true,
+      pathRewrite: { '^/wlapi': '' },
     },
-    "/lgapi": {
-        "target": "http://47.96.158.47:8080",
-        "changeOrigin": true,
-        "pathRewrite": { "^/lgapi" : "" }
-      }
+    '/lgapi': {
+      target: 'http://39.100.108.136:8080',
+      changeOrigin: true,
+      pathRewrite: { '^/lgapi': '' },
+    },
   },
   // history: 'hash',
   ignoreMomentLocale: true,
