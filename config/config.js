@@ -84,7 +84,7 @@ export default {
       pathRewrite: { '^/lgapi': '' },
     },
   },
-  // history: 'hash',
+  history: 'hash',
   ignoreMomentLocale: true,
   lessLoaderOptions: {
     javascriptEnabled: true,

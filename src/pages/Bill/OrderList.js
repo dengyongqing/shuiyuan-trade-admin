@@ -618,10 +618,10 @@ class OrderList extends PureComponent {
     this.setState({
       formValues: {},
     });
-    dispatch({
-      type: 'user/fetch',
-      payload: {},
-    });
+    // dispatch({
+    //   type: 'user/fetch',
+    //   payload: {},
+    // });
   };
 
   toggleForm = () => {
