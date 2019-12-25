@@ -55,15 +55,14 @@ class BasicForms extends PureComponent {
   }
 
   componentDidMount = () => {
-    const { dispatch, form, orderDetail } = this.props;
-    const { operateLabel } = this.state;
-    const query = queryString.parse(location.search);
+    const { dispatch, form, orderDetail, location: { query } } = this.props;
 
+    const { operateLabel } = this.state;
+    // const query = queryString.parse(location.search);
     if (query && query.id) {
       this.setState({
         operateLabel: '更新',
       })
-      
       dispatch({
         type: 'order/fetchDetail',
         payload: { id: query.id },
@@ -84,6 +83,7 @@ class BasicForms extends PureComponent {
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
         const sendTime = values.sendTime.format('YYYY-MM-DD HH:mm:ss');
+        // console.log('sendTime', sendTime);
         // values.sendTime = this.state.sendTime;
         if (orderDetail && orderDetail.id) {
           dispatch({
@@ -105,7 +105,7 @@ class BasicForms extends PureComponent {
         } else {
           dispatch({
             type: 'order/add',
-            payload: { ...values },
+            payload: { ...values, sendTime },
             callback: () => {
               message.success(`${operateLabel}成功`);
               dispatch({
